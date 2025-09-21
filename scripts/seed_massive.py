@@ -2,13 +2,85 @@ import random
 from faker import Faker
 from sqlalchemy.orm import Session
 from app.db import session
-from app.models.reference_models import Species, VaccineType
 from app.models import AdoptionCenter, AdoptionStatus, AdoptionState, Pet, Vaccine
 
 fake = Faker("es_ES")
 
 NUM_CENTERS = 200
 NUM_PETS = 20000
+
+SPECIES_BREEDS = {
+    "Dog": [
+        "Labrador Retriever", "German Shepherd", "Golden Retriever", "French Bulldog", "Bulldog",
+        "Beagle", "Poodle", "Rottweiler", "Yorkshire Terrier", "Dachshund",
+        "Boxer", "Doberman Pinscher", "Shih Tzu", "Great Dane", "Siberian Husky",
+        "Cocker Spaniel", "Chihuahua", "Maltese", "Pomeranian", "Border Collie",
+        "Basset Hound", "Akita", "Australian Shepherd", "Boston Terrier", "Weimaraner",
+        "Newfoundland", "Dalmatian", "Whippet", "Samoyed", "Bull Terrier",
+        "Staffordshire Bull Terrier", "Cane Corso", "Belgian Malinois", "Chow Chow", "Papillon",
+        "Jack Russell Terrier", "Alaskan Malamute", "Shiba Inu", "Irish Setter", "Greyhound",
+        "Saint Bernard", "Lhasa Apso", "Bloodhound", "Collie", "Vizsla",
+        "Portuguese Water Dog", "Chinese Crested", "Pekingese", "Scottish Terrier", "Havanese",
+        "Mixed", "Cruzado"
+    ],
+    "Cat": [
+        "Siamese", "Persian", "Maine Coon", "Sphynx", "Bengal",
+        "British Shorthair", "Ragdoll", "Abyssinian", "Birman", "Oriental Shorthair",
+        "Russian Blue", "Scottish Fold", "Norwegian Forest Cat", "American Shorthair", "Savannah",
+        "Devon Rex", "Cornish Rex", "Turkish Angora", "Manx", "Tonkinese",
+        "Himalayan", "Balinese", "Singapura", "Selkirk Rex", "Ocicat",
+        "Egyptian Mau", "Burmese", "Chartreux", "Japanese Bobtail", "Korat",
+        "LaPerm", "Somali", "Exotic Shorthair", "Nebelung", "American Curl",
+        "Pixie-Bob", "Bombay", "Cymric", "Snowshoe", "Munchkin",
+        "Chantilly-Tiffany", "Turkish Van", "Serengeti", "Peterbald", "Toyger",
+        "Mixed", "Cruzado"
+    ],
+    "Rabbit": [
+        "Lop", "Dutch", "Lionhead", "Rex", "Mini Rex", "Angora", "Harlequin", "Flemish Giant",
+        "English Spot", "Holland Lop", "Netherland Dwarf", "Silver Marten", "Mixed", "Cruzado"
+    ],
+    "Bird": [
+        "Parrot", "Canary", "Cockatiel", "Budgerigar", "Lovebird", "Macaw", "Cockatoo",
+        "African Grey", "Finch", "Conure", "Parakeet", "Lorikeet", "Mixed", "Cruzado"
+    ]
+}
+
+VACCINE_TYPES = {
+    "Dog": [
+        "Rabies",
+        "Parvovirus",
+        "Distemper",
+        "Hepatitis (Adenovirus)",
+        "Leptospirosis",
+        "Parainfluenza",
+        "Bordetella (Kennel Cough)",
+        "Canine Influenza",
+        "Lyme Disease",
+        "Coronavirus",
+    ],
+    "Cat": [
+        "Rabies",
+        "Feline Panleukopenia (Distemper)",
+        "Feline Herpesvirus (Rhinotracheitis)",
+        "Calicivirus",
+        "Feline Leukemia Virus (FeLV)",
+        "Chlamydia",
+        "Bordetella",
+    ],
+    "Rabbit": [
+        "Myxomatosis",
+        "Rabbit Hemorrhagic Disease Virus (RHDV1)",
+        "Rabbit Hemorrhagic Disease Virus 2 (RHDV2)",
+        "Pasteurellosis",
+    ],
+    "Bird": [
+        "Polyomavirus",
+        "Psittacosis (Chlamydia psittaci)",
+        "Pacheco’s Disease (Herpesvirus)",
+        "Avian Influenza",
+        "Newcastle Disease",
+    ]
+}
 
 
 def seed_massive():
@@ -22,57 +94,56 @@ def seed_massive():
             address=fake.address(),
             city=fake.city(),
             lat=float(fake.latitude()),
-            lon=float(fake.longitude())
+            lon=float(fake.longitude()),
         )
         db.add(center)
         centers.append(center)
 
     db.flush()
 
-    species_list = db.query(Species).all()
-    breeds_by_species = {
-        s.id: [b.id for b in s.breeds] for s in species_list
-    }
-    vaccine_types = db.query(VaccineType).all()
-
     pets = []
     for _ in range(NUM_PETS):
-        species = random.choice(species_list)
-        breed_id = random.choice(breeds_by_species[species.id]) if breeds_by_species[species.id] else None
+        species = random.choice(list(SPECIES_BREEDS.keys()))
+        breed = random.choice(SPECIES_BREEDS[species])
 
         birth_date = fake.date_between(start_date="-15y", end_date="today")
+
         pet = Pet(
             name=fake.first_name(),
-            species_id=species.id,
-            breed_id=breed_id,
+            species=species,
+            breed=breed,
             birth_date=birth_date,
             adoption_center_id=random.choice(centers).id,
+            image_url=fake.image_url(width=200, height=200),
         )
         db.add(pet)
         pets.append(pet)
 
     db.flush()
 
+    # Estado de adopción
     for pet in pets:
         status = AdoptionStatus(
             pet_id=pet.id,
-            estado=random.choice(list(AdoptionState)),
-            fecha_actualizacion=fake.date_time_between(start_date="-2y", end_date="now"),
+            state=random.choice(list(AdoptionState)),
         )
         db.add(status)
 
     db.flush()
 
+    # Vacunas
     for pet in pets:
-        num_vaccines = random.randint(0, 5)
-        for _ in range(num_vaccines):
-            vt = random.choice(vaccine_types)
-            vaccine = Vaccine(
-                pet_id=pet.id,
-                type_id=vt.id,
-                date=fake.date_between(start_date=pet.birth_date, end_date="today"),
-            )
-            db.add(vaccine)
+        vaccines_for_species = VACCINE_TYPES.get(pet.species, [])
+        if vaccines_for_species:
+            num_vaccines = random.randint(0, min(4, len(vaccines_for_species)))
+            chosen_vaccines = random.sample(vaccines_for_species, num_vaccines)
+            for vt in chosen_vaccines:
+                vaccine = Vaccine(
+                    pet_id=pet.id,
+                    type=vt,
+                    date=fake.date_between(start_date=pet.birth_date, end_date="today"),
+                )
+                db.add(vaccine)
 
     db.commit()
     db.close()
