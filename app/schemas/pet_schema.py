@@ -4,6 +4,7 @@ from typing import Optional
 from app.schemas.adoption_status_schema import AdoptionStatusResponse
 from app.schemas.vaccine_schema import VaccineResponse
 
+
 class PetBase(BaseModel):
     name: str
     species_id: int

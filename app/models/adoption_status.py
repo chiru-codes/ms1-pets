@@ -20,7 +20,7 @@ class AdoptionStatus(Base):
     state = Column(Enum(AdoptionState), nullable=False, default=AdoptionState.available)
     last_updated = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
 
-    # One-to-one relationship -> each pet has a single adoption status
+    # Relación 1:1 -> cada mascota tiene un estado de adopción único
     pet = relationship("Pet", back_populates="adoption_status")
 
     def __init__(self, pet_id, state=None):

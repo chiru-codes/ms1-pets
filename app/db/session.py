@@ -10,14 +10,13 @@ SessionLocal: Optional[sessionmaker] = None
 
 def init_db() -> None:
     """
-    Inicializa la base de datos con la configuración de Settings (pydantic).
+    Inicializa la base de datos
     """
     global _engine, SessionLocal
     db_url = settings.DATABASE_URL
-    print("👉 DATABASE_URL:", db_url)
 
     if not db_url:
-        raise RuntimeError("DATABASE_URL no definido en .env ni variables de entorno")
+        raise RuntimeError("DATABASE_URL not defined")
 
     _engine = create_engine(
         db_url,
@@ -34,15 +33,14 @@ def init_db() -> None:
         autocommit=False,
         autoflush=False
     )
-    print("✅ SessionLocal inicializado:", SessionLocal)
 
 
 def get_db_session() -> Generator[Session, None, None]:
     """
-    Dependencia de FastAPI para inyectar la sesión en cada request.
+    Dependencia de FastAPI para inyectar la sesión en cada request
     """
     if SessionLocal is None:
-        raise RuntimeError("_SessionLocal no ha sido inicializado; llama init_db primero")
+        raise RuntimeError("_SessionLocal not initialized")
 
     db = SessionLocal()
     try:

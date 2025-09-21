@@ -4,7 +4,7 @@ from app.models.adoption_status import AdoptionState
 
 
 class AdoptionStatusBase(BaseModel):
-    estado: AdoptionState
+    state: AdoptionState
 
 
 class AdoptionStatusCreate(AdoptionStatusBase):
@@ -12,13 +12,13 @@ class AdoptionStatusCreate(AdoptionStatusBase):
 
 
 class AdoptionStatusUpdate(BaseModel):
-    estado: AdoptionState
+    state: AdoptionState
 
 
 class AdoptionStatusResponse(AdoptionStatusBase):
     id: int
     pet_id: int
-    fecha_actualizacion: datetime
+    last_updated: datetime
 
     class Config:
         orm_mode = True

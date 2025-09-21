@@ -13,6 +13,7 @@ class Vaccine(Base):
 
     # Relación N:1 -> una vacuna pertenece a una mascota
     pet = relationship("Pet", back_populates="vaccines")
+
     type = relationship("VaccineType", back_populates="vaccines")
 
     def __repr__(self):
