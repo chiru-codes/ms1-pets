@@ -1,12 +1,20 @@
-from sqlalchemy import Column, Integer, String, Float
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, String, Float
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship, MappedColumn, mapped_column
 from app.db.base import Base
+import uuid
 
 
 class AdoptionCenter(Base):
     __tablename__ = "adoption_center"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id: MappedColumn[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        nullable=False
+    )
     name = Column(String(100), nullable=False)
     address = Column(String(200), nullable=False)
     city = Column(String(100), nullable=False)

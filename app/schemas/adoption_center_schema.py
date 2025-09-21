@@ -1,5 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
+from uuid import UUID
 
 
 class AdoptionCenterBase(BaseModel):
@@ -21,9 +22,10 @@ class AdoptionCenterUpdate(BaseModel):
     lat: Optional[float] = None
     lon: Optional[float] = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class AdoptionCenterResponse(AdoptionCenterBase):
-    id: int
+    id: UUID
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

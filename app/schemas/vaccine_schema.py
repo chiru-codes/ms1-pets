@@ -1,11 +1,12 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import date
 from typing import Optional
+from uuid import UUID
 
 
 class VaccineBase(BaseModel):
-    pet_id: int
-    type_id: int
+    pet_id: UUID
+    type: str
     date: date
 
 
@@ -14,12 +15,13 @@ class VaccineCreate(VaccineBase):
 
 
 class VaccineUpdate(BaseModel):
-    type_id: Optional[int] = None
+    type: Optional[str] = None
     date: Optional[date] = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class VaccineResponse(VaccineBase):
-    id: int
+    id: UUID
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

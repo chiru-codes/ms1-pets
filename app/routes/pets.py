@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Any, Optional, Dict
-
+from uuid import UUID
 from app.db.session import get_db_session
 from app.schemas import PetCreate, PetUpdate, PetResponse
 from app.services import pet_service
@@ -16,9 +16,9 @@ router = APIRouter(
 @router.get("/", response_model=Dict[str, Any])
 def list_pets(
         db: Session = Depends(get_db_session),
-        species_id: Optional[int] = Query(None, description="Species ID"),
-        breed_id: Optional[int] = Query(None, description="Breed ID"),
-        center_id: Optional[int] = Query(None, description="Adoption Center ID"),
+        species: Optional[str] = Query(None, description="Species ID"),
+        breed: Optional[str] = Query(None, description="Breed ID"),
+        center_id: Optional[UUID] = Query(None, description="Adoption Center ID"),
         min_age: Optional[int] = Query(None, description="Min age in years"),
         max_age: Optional[int] = Query(None, description="Max age in years"),
         age_category: Optional[str] = Query(None, description="puppy, adult, senior"),
@@ -27,8 +27,8 @@ def list_pets(
 ):
     query = pet_service.get_pets_query(
         db,
-        species_id=species_id,
-        breed_id=breed_id,
+        species=species,
+        breed=breed,
         center_id=center_id,
         min_age=min_age,
         max_age=max_age,
@@ -39,7 +39,7 @@ def list_pets(
 
 
 @router.get("/{pet_id}", response_model=PetResponse)
-def get_pet(pet_id: int, db: Session = Depends(get_db_session)):
+def get_pet(pet_id: UUID, db: Session = Depends(get_db_session)):
     pet = pet_service.get_pet_by_id(db, pet_id)
     if not pet:
         raise HTTPException(status_code=404, detail="Pet not found")
@@ -52,7 +52,7 @@ def create_pet(pet: PetCreate, db: Session = Depends(get_db_session)):
 
 
 @router.patch("/{pet_id}", response_model=PetResponse)
-def update_pet(pet_id: int, pet_update: PetUpdate, db: Session = Depends(get_db_session)):
+def update_pet(pet_id: UUID, pet_update: PetUpdate, db: Session = Depends(get_db_session)):
     pet = pet_service.update_pet(db, pet_id, pet_update)
     if not pet:
         raise HTTPException(status_code=404, detail="Pet not found")
@@ -60,7 +60,7 @@ def update_pet(pet_id: int, pet_update: PetUpdate, db: Session = Depends(get_db_
 
 
 @router.delete("/{pet_id}", status_code=204)
-def delete_pet(pet_id: int, db: Session = Depends(get_db_session)):
+def delete_pet(pet_id: UUID, db: Session = Depends(get_db_session)):
     success = pet_service.delete_pet(db, pet_id)
     if not success:
         raise HTTPException(status_code=404, detail="Pet not found")

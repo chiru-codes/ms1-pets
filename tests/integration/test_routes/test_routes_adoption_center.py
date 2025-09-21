@@ -11,7 +11,6 @@ def test_create_and_get_center(client):
     data = response.json()
     assert data["name"] == "Refugio Patitas"
 
-    # Ahora lo obtenemos por id
     center_id = data["id"]
     response = client.get(f"/centers/{center_id}")
     assert response.status_code == 200

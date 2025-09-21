@@ -1,51 +1,99 @@
+import uuid
+import datetime
 from sqlalchemy.orm import Session
-from typing import Optional, List, Type
-
-from app.models.vaccine import Vaccine
+from app.models.adoption_center import AdoptionCenter
+from app.models.pet import Pet
+from app.services import vaccine_service
 from app.schemas import VaccineCreate, VaccineUpdate
 
 
-def get_vaccines(
-        db: Session, pet_id: Optional[int] = None, skip: int = 0, limit: int = 20
-) -> List[Type[Vaccine]]:
-    query = db.query(Vaccine)
-    if pet_id:
-        query = query.filter(Vaccine.pet_id == pet_id)
-    return list(query.offset(skip).limit(limit).all())
-
-
-def get_vaccine_by_id(db: Session, vaccine_id: int) -> Optional[Vaccine]:
-    return db.query(Vaccine).filter(Vaccine.id == vaccine_id).first()
-
-
-def create_vaccine(db: Session, vaccine: VaccineCreate) -> Vaccine:
-    db_vaccine = Vaccine(**vaccine.model_dump())
-    db.add(db_vaccine)
+def make_center_and_pet(db: Session):
+    center = AdoptionCenter(name="Centro Test", address="Dir", city="City")
+    db.add(center)
     db.commit()
-    db.refresh(db_vaccine)
-    return db_vaccine
+    db.refresh(center)
 
-
-def update_vaccine(
-        db: Session, vaccine_id: int, vaccine_update: VaccineUpdate
-) -> Optional[Type[Vaccine]]:
-    db_vaccine = db.query(Vaccine).filter(Vaccine.id == vaccine_id).first()
-    if not db_vaccine:
-        return None
-
-    for key, value in vaccine_update.model_dump(exclude_unset=True).items():
-        setattr(db_vaccine, key, value)
-
+    birth_date = datetime.date.today().replace(year=datetime.date.today().year - 2)
+    pet = Pet(
+        name="TestPet",
+        species="Dog",
+        breed="Mix",
+        birth_date=birth_date,
+        adoption_center_id=center.id,
+    )
+    db.add(pet)
     db.commit()
-    db.refresh(db_vaccine)
-    return db_vaccine
+    db.refresh(pet)
+    return center, pet
 
 
-def delete_vaccine(db: Session, vaccine_id: int) -> bool:
-    db_vaccine = db.query(Vaccine).filter(Vaccine.id == vaccine_id).first()
-    if not db_vaccine:
-        return False
+def test_create_and_get_vaccine(db_session: Session):
+    _, pet = make_center_and_pet(db_session)
 
-    db.delete(db_vaccine)
-    db.commit()
-    return True
+    payload = VaccineCreate(
+        pet_id=pet.id,
+        type="Rabies",
+        date=datetime.date.today()
+    )
+    created = vaccine_service.create_vaccine(db_session, payload)
+
+    assert created.id is not None
+    assert isinstance(created.id, uuid.UUID)
+    assert created.pet_id == pet.id
+    assert created.type == "Rabies"
+
+    fetched = vaccine_service.get_vaccine_by_id(db_session, created.id)
+    assert fetched is not None
+    assert fetched.id == created.id
+
+
+def test_get_vaccines_filter_and_pagination(db_session: Session):
+    _, pet1 = make_center_and_pet(db_session)
+    _, pet2 = make_center_and_pet(db_session)
+
+    for i in range(4):
+        vaccine_service.create_vaccine(
+            db_session,
+            VaccineCreate(pet_id=pet1.id, type=f"V{i}", date=datetime.date.today())
+        )
+
+    vaccine_service.create_vaccine(
+        db_session,
+        VaccineCreate(pet_id=pet2.id, type="Other", date=datetime.date.today())
+    )
+
+    all_vaccines = vaccine_service.get_vaccines(db_session)
+    assert len(all_vaccines) >= 5
+
+    pet1_vaccines = vaccine_service.get_vaccines(db_session, pet_id=pet1.id)
+    assert all(v.pet_id == pet1.id for v in pet1_vaccines)
+
+    page1 = vaccine_service.get_vaccines(db_session, skip=0, limit=2)
+    page2 = vaccine_service.get_vaccines(db_session, skip=2, limit=2)
+    assert len(page1) == 2
+    assert len(page2) == 2
+
+
+def test_update_and_delete_vaccine(db_session: Session):
+    _, pet = make_center_and_pet(db_session)
+    created = vaccine_service.create_vaccine(
+        db_session,
+        VaccineCreate(pet_id=pet.id, type="Rabies", date=datetime.date.today())
+    )
+
+    updated = vaccine_service.update_vaccine(
+        db_session, created.id, VaccineUpdate(type="Distemper")
+    )
+    assert updated is not None
+    assert updated.type == "Distemper"
+
+    ok = vaccine_service.delete_vaccine(db_session, created.id)
+    assert ok is True
+    assert vaccine_service.get_vaccine_by_id(db_session, created.id) is None
+
+
+def test_update_delete_not_found(db_session: Session):
+    fake_id = uuid.uuid4()
+    assert vaccine_service.get_vaccine_by_id(db_session, fake_id) is None
+    assert vaccine_service.update_vaccine(db_session, fake_id, VaccineUpdate(type="X")) is None
+    assert vaccine_service.delete_vaccine(db_session, fake_id) is False

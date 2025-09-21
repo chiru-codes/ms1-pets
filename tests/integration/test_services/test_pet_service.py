@@ -1,91 +1,62 @@
+import uuid
+import datetime
+import pytest
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
-from typing import Optional, List, Type
-from datetime import date
-
-from app.models.pet import Pet
-from app.schemas import PetCreate, PetUpdate
+from app.schemas.pet_schema import PetCreate, PetUpdate
+from app.services import pet_service
 
 
-def get_pets(
-        db: Session,
-        species_id: Optional[int] = None,
-        breed_id: Optional[int] = None,
-        center_id: Optional[int] = None,
-        min_age: Optional[int] = None,
-        max_age: Optional[int] = None,
-        age_category: Optional[str] = None,
-        skip: int = 0,
-        limit: int = 20,
-) -> List[Type[Pet]]:
-    """
-    Devuelve lista de mascotas con filtros opcionales:
-    - species_id, breed_id, center_id
-    - min_age (años), max_age (años)
-    - age_category (puppy/adult/senior)
-    """
-    query = db.query(Pet)
-
-    if species_id:
-        query = query.filter(Pet.species_id == species_id)
-    if breed_id:
-        query = query.filter(Pet.breed_id == breed_id)
-    if center_id:
-        query = query.filter(Pet.adoption_center_id == center_id)
-
-    today = date.today()
-    if min_age:
-        cutoff = date(today.year - min_age, today.month, today.day)
-        query = query.filter(Pet.birth_date <= cutoff)  # edad mínima
-    if max_age:
-        cutoff = date(today.year - max_age, today.month, today.day)
-        query = query.filter(Pet.birth_date >= cutoff)  # edad máxima
-
-    if age_category:
-        if age_category == "puppy":
-            cutoff = date(today.year - 1, today.month, today.day)
-            query = query.filter(Pet.birth_date >= cutoff)
-        elif age_category == "adult":
-            cutoff_young = date(today.year - 7, today.month, today.day)
-            cutoff_old = date(today.year - 1, today.month, today.day)
-            query = query.filter(and_(Pet.birth_date < cutoff_old, Pet.birth_date >= cutoff_young))
-        elif age_category == "senior":
-            cutoff = date(today.year - 7, today.month, today.day)
-            query = query.filter(Pet.birth_date < cutoff)
-
-    return list(query.offset(skip).limit(limit).all())
+@pytest.fixture
+def sample_pet_data():
+    return PetCreate(
+        name="Firulais",
+        species="Dog",
+        breed="Labrador",
+        birth_date=datetime.date(2020, 1, 1),
+        adoption_center_id=uuid.uuid4(),
+    )
 
 
-def get_pet_by_id(db: Session, pet_id: int) -> Optional[Pet]:
-    return db.query(Pet).filter(Pet.id == pet_id).first()
+def test_create_pet(db_session: Session, sample_pet_data):
+    pet = pet_service.create_pet(db_session, sample_pet_data)
+    assert pet.id is not None
+    assert pet.name == "Firulais"
+    assert pet.species == "Dog"
+    assert pet.breed == "Labrador"
+    assert isinstance(pet.birth_date, datetime.date)
 
 
-def create_pet(db: Session, pet: PetCreate) -> Pet:
-    db_pet = Pet(**pet.model_dump())
-    db.add(db_pet)
-    db.commit()
-    db.refresh(db_pet)
-    return db_pet
+def test_get_pet_by_id(db_session: Session, sample_pet_data):
+    created_pet = pet_service.create_pet(db_session, sample_pet_data)
+    fetched_pet = pet_service.get_pet_by_id(db_session, created_pet.id)
+    assert fetched_pet is not None
+    assert fetched_pet.id == created_pet.id
 
 
-def update_pet(db: Session, pet_id: int, pet_update: PetUpdate) -> Optional[Type[Pet]]:
-    db_pet = db.query(Pet).filter(Pet.id == pet_id).first()
-    if not db_pet:
-        return None
-
-    for key, value in pet_update.model_dump(exclude_unset=True).items():
-        setattr(db_pet, key, value)
-
-    db.commit()
-    db.refresh(db_pet)
-    return db_pet
+def test_update_pet(db_session: Session, sample_pet_data):
+    created_pet = pet_service.create_pet(db_session, sample_pet_data)
+    update_data = PetUpdate(name="Max", breed="Golden Retriever")
+    updated_pet = pet_service.update_pet(db_session, created_pet.id, update_data)
+    assert updated_pet is not None
+    assert updated_pet.name == "Max"
+    assert updated_pet.breed == "Golden Retriever"
 
 
-def delete_pet(db: Session, pet_id: int) -> bool:
-    db_pet = db.query(Pet).filter(Pet.id == pet_id).first()
-    if not db_pet:
-        return False
+def test_update_pet_not_found(db_session: Session):
+    fake_id = uuid.uuid4()
+    update_data = PetUpdate(name="Ghost")
+    result = pet_service.update_pet(db_session, fake_id, update_data)
+    assert result is None
 
-    db.delete(db_pet)
-    db.commit()
-    return True
+
+def test_delete_pet(db_session: Session, sample_pet_data):
+    created_pet = pet_service.create_pet(db_session, sample_pet_data)
+    deleted = pet_service.delete_pet(db_session, created_pet.id)
+    assert deleted is True
+    assert pet_service.get_pet_by_id(db_session, created_pet.id) is None
+
+
+def test_delete_pet_not_found(db_session: Session):
+    fake_id = uuid.uuid4()
+    deleted = pet_service.delete_pet(db_session, fake_id)
+    assert deleted is False

@@ -1,6 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from app.models.adoption_status import AdoptionState
+from uuid import UUID
 
 
 class AdoptionStatusBase(BaseModel):
@@ -8,17 +9,17 @@ class AdoptionStatusBase(BaseModel):
 
 
 class AdoptionStatusCreate(AdoptionStatusBase):
-    pet_id: int
+    pet_id: UUID
 
 
 class AdoptionStatusUpdate(BaseModel):
     state: AdoptionState
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AdoptionStatusResponse(AdoptionStatusBase):
-    id: int
-    pet_id: int
+    id: UUID
+    pet_id: UUID
     last_updated: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

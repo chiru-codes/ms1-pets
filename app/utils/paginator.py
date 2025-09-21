@@ -14,7 +14,7 @@ def paginate_query(
     Args:
         query (Query): Consulta SQLAlchemy.
         page (int, opcional): Página actual (empieza en 1). Por defecto 1.
-        page_size (int, opcional): Número de resultados por página. Por defecto 10.
+        page_size (int, opcional): Número de resultados por página. Por defecto 16.
         db (Session, opcional): Sesión de SQLAlchemy (si necesitas ejecutar count separado).
 
     Returns:

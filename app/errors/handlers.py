@@ -10,20 +10,16 @@ def register_exception_handlers(app: FastAPI):
     async def http_exception_handler(request: Request, exc: StarletteHTTPException):
         return JSONResponse(
             status_code=exc.status_code,
-            content={
-                "error": exc.detail,
-                "status_code": exc.status_code,
-                "path": request.url.path,
-            },
+            content={"detail": exc.detail},
         )
 
     @app.exception_handler(RequestValidationError)
-    async def validation_exception_handler(exc: RequestValidationError):
+    async def validation_exception_handler(request: Request, exc: RequestValidationError):
         return JSONResponse(
             status_code=422,
             content={
-                "error": "Validation Error",
-                "details": exc.errors(),
+                "detail": "Validation Error",
+                "errors": exc.errors(),
                 "body": exc.body,
             },
         )
@@ -33,8 +29,7 @@ def register_exception_handlers(app: FastAPI):
         return JSONResponse(
             status_code=500,
             content={
-                "error": "Internal Server Error",
+                "detail": "Internal Server Error",
                 "message": str(exc),
-                "path": request.url.path,
             },
         )
