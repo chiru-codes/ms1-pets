@@ -1,4 +1,5 @@
 from .default import Settings as DefaultSettings
+import os
 
 
 class TestingSettings(DefaultSettings):

@@ -10,8 +10,11 @@ class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv("DATABASE_URL")
     DEBUG: bool = False
     TESTING: bool = False
+    POSTGRES_USER: str = os.getenv("POSTGRES_USER")
+    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD")
+    POSTGRES_DB: str = os.getenv("POSTGRES_DB")
     ITEMS_PER_PAGE: int = 20
-    LOG_LEVEL: str = "INFO"
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL")
     APP_ENV: str = "default"
     S3_BASE_URL: str = os.getenv("S3_BASE_URL")
     S3_BUCKET: str = os.getenv("S3_BUCKET")
