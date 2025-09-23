@@ -5,9 +5,9 @@ services:
     image: postgres:15
     container_name: dockerized_ms1_db
     environment:
-      POSTGRES_USER: mariela
-      POSTGRES_PASSWORD: 36279841psw
-      POSTGRES_DB: ms1_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
@@ -20,8 +20,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql+psycopg2://mariela:36279841psw@db:5432/ms1_db
-      AWS_S3_BASE_URL: https://ms1-images.s3.amazonaws.com
+      DATABASE_URL: ${DATABASE_URL}
+      S3_BASE_URL: ${S3_BASE_URL}
+      S3_BUCKET: ${S3_BUCKET}
+      APP_ENV: ${APP_ENV}
+      LOG_LEVEL: ${LOG_LEVEL}
     depends_on:
       - db
     volumes:
