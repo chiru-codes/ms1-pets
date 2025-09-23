@@ -1,13 +1,23 @@
 import random
+import boto3
+import os
 from faker import Faker
 from sqlalchemy.orm import Session
 from app.db import session
 from app.models import AdoptionCenter, AdoptionStatus, AdoptionState, Pet, Vaccine
+from dotenv import load_dotenv
 
 fake = Faker("es_ES")
 
 NUM_CENTERS = 200
 NUM_PETS = 20000
+CHUNK_SIZE = 500
+
+load_dotenv()
+S3_BASE_URL = os.getenv("S3_BASE_URL")
+
+s3 = boto3.client("s3")
+S3_BUCKET = os.getenv("S3_BUCKET")
 
 SPECIES_BREEDS = {
     "Dog": [
@@ -82,13 +92,32 @@ VACCINE_TYPES = {
     ]
 }
 
+species_cache = {}
+
+
+def get_image(species):
+    folder = f"images/{species.lower()}s/"
+
+    if folder not in species_cache:
+        response = s3.list_objects_v2(Bucket=S3_BUCKET, Prefix=folder)
+        files = [obj["Key"] for obj in response.get("Contents", [])
+                 if obj["Key"].endswith((".jpg", ".jpeg", ".png"))]
+        species_cache[folder] = files
+
+    files = species_cache[folder]
+    if not files:
+        return f"{S3_BASE_URL}/images/{folder}100.jpg"
+
+    chosen = random.choice(files)
+    return f"{S3_BASE_URL}/{chosen}"
+
 
 def seed_massive():
     session.init_db()
     db: Session = session.SessionLocal()
 
     centers = []
-    for _ in range(NUM_CENTERS):
+    for i in range(NUM_CENTERS):
         center = AdoptionCenter(
             name=fake.company(),
             address=fake.address(),
@@ -99,14 +128,20 @@ def seed_massive():
         db.add(center)
         centers.append(center)
 
-    db.flush()
+        if (i + 1) % CHUNK_SIZE == 0:
+            db.commit()
+            print(f"{i + 1} centros insertados...")
+
+    db.commit()
 
     pets = []
-    for _ in range(NUM_PETS):
+    for i in range(NUM_PETS):
         species = random.choice(list(SPECIES_BREEDS.keys()))
         breed = random.choice(SPECIES_BREEDS[species])
-
         birth_date = fake.date_between(start_date="-15y", end_date="today")
+        image_url = get_image(species)
+        if image_url is None:
+            image_url = f"/static/images/{species.lower()}s/100.jpg"
 
         pet = Pet(
             name=fake.first_name(),
@@ -114,25 +149,24 @@ def seed_massive():
             breed=breed,
             birth_date=birth_date,
             adoption_center_id=random.choice(centers).id,
-            image_url=fake.image_url(width=200, height=200),
+            image_url=image_url,
         )
         db.add(pet)
         pets.append(pet)
 
-    db.flush()
+        if (i + 1) % CHUNK_SIZE == 0:
+            db.commit()
+            print(f"{i+1} mascotas insertadas...")
 
-    # Estado de adopción
-    for pet in pets:
+    db.commit()
+
+    for i, pet in enumerate(pets):
         status = AdoptionStatus(
             pet_id=pet.id,
             state=random.choice(list(AdoptionState)),
         )
         db.add(status)
 
-    db.flush()
-
-    # Vacunas
-    for pet in pets:
         vaccines_for_species = VACCINE_TYPES.get(pet.species, [])
         if vaccines_for_species:
             num_vaccines = random.randint(0, min(4, len(vaccines_for_species)))
@@ -144,6 +178,10 @@ def seed_massive():
                     date=fake.date_between(start_date=pet.birth_date, end_date="today"),
                 )
                 db.add(vaccine)
+
+        if (i + 1) % CHUNK_SIZE == 0:
+            db.commit()
+            print(f"Estados/vacunas generados para {i + 1} mascotas")
 
     db.commit()
     db.close()

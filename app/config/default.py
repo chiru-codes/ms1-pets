@@ -1,13 +1,20 @@
 from pydantic_settings import BaseSettings
+import os
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "postgresql+psycopg2://mariela:@localhost:5432/pets_db"
+    DATABASE_URL: str = os.getenv("DATABASE_URL")
     DEBUG: bool = False
     TESTING: bool = False
     ITEMS_PER_PAGE: int = 20
     LOG_LEVEL: str = "INFO"
     APP_ENV: str = "default"
+    S3_BASE_URL: str = os.getenv("S3_BASE_URL")
+    S3_BUCKET: str = os.getenv("S3_BUCKET")
 
     class Config:
         env_file = ".env"
