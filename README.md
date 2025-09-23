@@ -74,16 +74,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-3. Configura la variables de entorno en un archivo .env:
-```bash
-DATABASE_URL=
-LOG_LEVEL=
-
-S3_BASE_URL=
-S3_BUCKET=
-
-APP_ENV=
-```
+3. Configura la variables de entorno en el archivo .env_example y renombrarlo como .env:
 
 4. Ejecutar migraciones:
 ```bash
