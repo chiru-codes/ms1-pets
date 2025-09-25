@@ -25,6 +25,10 @@ services:
       S3_BUCKET: ${S3_BUCKET}
       APP_ENV: ${APP_ENV}
       LOG_LEVEL: ${LOG_LEVEL}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
     depends_on:
       - db
     volumes:
