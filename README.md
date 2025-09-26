@@ -1,6 +1,6 @@
 # 🐾 MS1 - Pet Adoption
 
-Ese es el primer microservicio de los cinco microservicios que constituyen el proyecto parcial, Pet Adoption, del curso 
+Primer microservicio de los cinco microservicios que constituyen el proyecto parcial, Pet Adoption, del curso 
 de Cloud Computing para el pre-grado de Computer Science.
 
 **MS1** gestiona la información de `mascotas`, `centros de adopción`, `estados de adopción` y `vacunas`, 
