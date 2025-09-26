@@ -54,12 +54,12 @@ ms1-mascotas/
 
 - Python 3.11+
 - PostgreSQL 15+
-- [Docker](https://docs.docker.com/get-docker/) (opcional)
+- [Docker](https://docs.docker.com/get-docker/)
 - Cuenta en **AWS S3** con un bucket configurado
 
 ---
 
-## 🛠️ Instalación y ejecución local
+## 🛠️ Instalación y ejecución en VM de EC2 con Docker 🐳
 
 1. Clonar el repositorio:
 ```bash
@@ -74,29 +74,28 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-3. Configura la variables de entorno en el archivo .env_example y renombrarlo como .env:
+3. Configura la variables de entorno en un archivo .env:
 
-4. Ejecutar migraciones:
+4. Construir el contenedor
 ```bash
-alembic upgrade head
+docker compose up -d
 ```
 
-5. Generar datos de prueba:
+5. Verifica que las variables estén bien dentro del contenedor:
 ```bash
-python -m scripts.seed_massive
+docker compose run --rm web env | grep AWS
 ```
 
-6. Levanta el servidor:
+5. Migrar la base de datos para crear todas las tablas:
 ```bash
-uvicorn app.main:app --reload
+docker compose run --rm web alembic upgrade head
 ```
-Documentación: http://localhost:8000/docs
 
-### 🐳 Ejecución con Docker
-1. Construir e iniciar los contenedores:
+6. Correr el seeder para poblar datos (puede tomar 20 min):
 ```bash
-docker-compose up --build
+docker compose run --rm web python -m scripts.seed_massive
 ```
+Documentación: http://<PublicIPs>:8000/docs
 
 ---
 
