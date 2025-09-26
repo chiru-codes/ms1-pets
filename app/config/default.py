@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID")
     AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY")
     AWS_SESSION_TOKEN: str = os.getenv("AWS_SESSION_TOKEN")
-    AWS_REGION: str = os.getenv("AWS_REGION")
+    AWS_DEFAULT_REGION: str = os.getenv("AWS_DEFAULT_REGION")
 
     class Config:
         env_file = ".env"
