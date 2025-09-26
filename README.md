@@ -95,7 +95,10 @@ docker compose run --rm web alembic upgrade head
 ```bash
 docker compose run --rm web python -m scripts.seed_massive
 ```
-Documentación: http://<PublicIPs>:8000/docs
+Documentación:
+```bash
+http://<PublicIPs>:8000/docs
+```
 
 ---
 
